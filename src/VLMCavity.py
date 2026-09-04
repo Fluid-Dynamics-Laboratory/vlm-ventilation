@@ -94,6 +94,7 @@ EPS_SIDE = 1.0e-6        # displacement of the evaluation points off the sheet, 
 CLOSURE_TOL = 1.0e-3     # closure residual, thickness at the cavity end over chord, considered zero
 MAX_SWEEPS = 40          # sweeps of the extent iteration over all sections (extent="closure" only)
 L_MAX = 0.5              # longest cavity solved on the lattice (Acosta's limit); beyond, the sectional lift slope is imposed
+L_LOAD_CAP = 10.0        # cavity length beyond which the sectional lift slope is taken at this value (within 1 per cent of pi/2)
 
 
 # ---------------------------------------------------------------- source panel kernel
@@ -196,6 +197,7 @@ class Ventilation:
         self.solver = solver
         self.g = g; self.dsigma = dsigma; self.rate = rate; self.phi_crit = phi_crit
         self.washout = washout              # False disables the re-entrant-jet elimination (two-dimensional verification)
+        self.washout_time = 3.0             # chords of travel an unstable cavity survives before the flow rewets
         self.inception = inception          # callable(surface, solver) -> assessment, or None
         self.state = {}
         for surface in solver.surfaces:
@@ -402,6 +404,7 @@ class CavitySolver(VLMSolver):
         alpha_eff = np.maximum(gte/(np.pi*u*g["chord"]), 1e-9)              # Cl = 2 Gamma/(u c) = 2 pi alpha_eff
         psi = np.maximum(g["sigma_sec"], 0.0)/(2*alpha_eff)
         L = np.where(psi > 0, vs.cavity_length(np.maximum(psi, 1e-12)), vs.L_FIT_MAX)
+        self.vent.state[id(surface)]["L_stability"] = 2.31/np.maximum(psi, 2.31/vs.L_FIT_MAX)   # long-cavity relation (1.8)
         return np.asarray(L, float), alpha_eff
 
     def _solve_with_lengths(self, lengths):
@@ -475,7 +478,7 @@ class CavitySolver(VLMSolver):
             Lt, aeff = self._sectional_targets(surface)
             st["L_target"] = Lt; st["alpha_eff"] = aeff
             dL = self.vent.rate*u*dt/g["chord"]                               # growth limit per step
-            L = np.minimum(Lt, st["L"] + dL)
+            L = np.minimum(np.minimum(Lt, L_LOAD_CAP), st["L"] + dL)         # a0(L) is within 1 per cent of pi/2 beyond L_LOAD_CAP
             lengths[id(surface)] = np.where(st["active"], L, 0.0)
         Gamma, q, info = self._solve_with_lengths(lengths)
         for surface in self.surfaces:
@@ -520,7 +523,11 @@ class CavitySolver(VLMSolver):
                 # uncapped, so a cavity extending beyond the trailing edge keeps its taper.
                 act = st["active"]
                 if act.sum() >= 3:
-                    span = g["span_sec"][act]; xcl = np.asarray(st["L_target"], float)[act]*g["chord"][act]
+                    # the closure line is evaluated with the long-cavity relation L = 2.31/Psi, the one Harwood
+                    # et al. use in Sect. 4 to derive the washout boundary; the blend used for the loads flattens
+                    # for 1 < L < 3 and would steepen the line by some 25 degrees (docs/cavity/README.md, Sect. 5)
+                    span = g["span_sec"][act]
+                    xcl = np.asarray(st["L_stability"], float)[act]*g["chord"][act]
                     phi_bar, phi_local = vs.closure_angle(span, xcl)
                     k = int(np.argmin(np.abs(span - 0.5*g["span_total"])))
                     st["phi_bar"] = float(phi_local[k]); st["phi_mean"] = phi_bar
@@ -532,15 +539,20 @@ class CavitySolver(VLMSolver):
                     if not gate_open and self.vent.inception is not None:
                         gate_open = bool(self.vent.inception(surface, self)["incepts"])
                     if not gate_open:
-                        dL = self.vent.rate*u*dt/g["chord"]
-                        st["L"] = np.maximum(st["L"] - dL, 0.0)
-                        st["active"] &= st["L"] > 0
-                        if not np.any(st["active"]):
-                            st["forced"] = None; st["route"] = "washout"
+                        # the re-entrant jet destroys the cavity within a few convective times (Harwood et al.
+                        # 2016): the flow rewets once the cavity has been unstable for `washout_time` chords of travel
+                        st["unstable_time"] = st.get("unstable_time", 0.0) + u*dt/float(g["chord"].mean())
+                        if st["unstable_time"] >= self.vent.washout_time:
+                            st["active"][:] = False; st["L"][:] = 0.0
+                            st["forced"] = None; st["route"] = "washout"; st["unstable_time"] = 0.0
+                    else:
+                        st["unstable_time"] = 0.0
+                else:
+                    st["unstable_time"] = 0.0
             # regime label
             act = st["active"]
             if np.any(act):
-                D = float(g["span_sec"][act].max() + 0.5*g["ds"])          # extent of the ventilated sections along the span
+                D = float(g["span_sec"][act].max() + g["ds"])              # extent of the ventilated sections, to the far edge of the last one
                 h = float(g["span_total"])
                 phi = st["phi_bar"] if (st["phi_bar"] is not None and self.vent.washout) else 0.0
                 st["regime"] = vs.regime(D, phi, h) if h > 0 else "PV"

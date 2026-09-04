@@ -60,8 +60,13 @@ def main():
     out = {}
     # ---- Case A
     print("Case A: fully ventilated branch, Fn_h = 2.5, AR_h = 1")
-    print(" alpha  CL wet   CL vent  ratio   e wet   e vent   L range (root..tip)   phi_bar  branches")
+    print(" alpha  CL wet   CL vent  ratio  D-S 2019   e wet   e vent   L range (root..tip)   phi_mid  branches")
     caseA = []
+    def damley_strnad_ratio(alpha_deg, fnh, ar_h=1.0):
+        # Damley-Strnad, Harwood & Young (smp'19) eq. (7), atmospheric cavity: psi = sigma_c/alpha with the
+        # mean-depth cavitation number 1/Fn_h^2
+        psi = (1.0/fnh**2)/np.deg2rad(alpha_deg)
+        return (1 - (ar_h - 1)/(2*ar_h + 1)*np.exp(-psi))*(psi**2 - 0.935*psi + 1)/(psi**2 - 1.535*psi + 2)
     for a in [6.0, 10.0, 14.0, 18.0]:
         s, v, u, h = strut(a, 2.5); cl_w = run(s, v, u)
         e_w = float(np.nanmean(v.vent.state[id(s)]["xcp"]))
@@ -70,9 +75,10 @@ def main():
         e_v = float(np.nanmean(st["xcp"][st["active"]])) if np.any(st["active"]) else float("nan")
         L = st["L"]; phi = np.degrees(st["phi_bar"]) if st["phi_bar"] is not None else float("nan")
         br = {k: int(np.sum(st["branch"] == k)) for k in ("wet", "lattice", "sectional")}
-        caseA.append(dict(alpha=a, CL_wet=cl_w, CL_vent=cl_v, ratio=cl_v/cl_w, e_wet=e_w, e_vent=e_v, L=L, phi_bar=phi,
-                          regime=st["regime"], branches=br, depth_sec=v._cavity_geo[id(s)]["depth_sec"]/C))
-        print(f" {a:5.1f} {cl_w:7.4f} {cl_v:8.4f} {cl_v/cl_w:6.3f} {e_w:7.3f} {e_v:8.3f}   {L[0]:.2f} .. {L[-1]:.2f}            {phi:6.1f}   {br}  {st['regime']}")
+        ds = float(damley_strnad_ratio(a, 2.5))
+        caseA.append(dict(alpha=a, CL_wet=cl_w, CL_vent=cl_v, ratio=cl_v/cl_w, ratio_damley_strnad=ds, e_wet=e_w, e_vent=e_v, L=L,
+                          phi_mid=phi, regime=st["regime"], branches=br, depth_sec=v._cavity_geo[id(s)]["depth_sec"]/C))
+        print(f" {a:5.1f} {cl_w:7.4f} {cl_v:8.4f} {cl_v/cl_w:6.3f} {ds:8.3f} {e_w:7.3f} {e_v:8.3f}   {L[0]:.2f} .. {L[-1]:.2f}            {phi:6.1f}   {br}  {st['regime']}")
     out["caseA"] = caseA
     # ---- Case B
     print("Case B: closure angle at alpha = 20 deg, Fn_h = 1.5 (measured 40.75 deg, criterion 45 deg)")
@@ -82,26 +88,26 @@ def main():
         st = v.vent.state[id(s)]
         phi = np.degrees(st["phi_bar"]) if st["phi_bar"] is not None else float("nan")
         fn_wash = float(vs.washout_froude(cl, 1.0))
-        caseB.append(dict(Fn_h=fnh, phi_bar=phi, CL=cl, L=st["L"], Fn_washout_of_CL=fn_wash, regime=st["regime"]))
-        print(f"  Fn_h = {fnh:.1f}: phi_bar = {phi:5.1f} deg  CL = {cl:.3f}  washout Fn_h(CL) of Harwood = {fn_wash:.2f}  regime {st['regime']}")
+        caseB.append(dict(Fn_h=fnh, phi_mid=phi, CL=cl, L=st["L"], Fn_washout_of_CL=fn_wash, regime=st["regime"]))
+        print(f"  Fn_h = {fnh:.1f}: phi(mid-depth) = {phi:5.1f} deg  CL = {cl:.3f}  washout Fn_h(CL) of Harwood = {fn_wash:.2f}  regime {st['regime']}")
     out["caseB"] = caseB
     # ---- Case C: hysteresis
     print("Case C: hysteresis at Fn_h = 2.5, stall gate 14.5 deg")
     gate = stall_gate(14.5)
     up = []; prev = None
     for a in np.arange(4.0, 20.1, 2.0):
-        s, v, u, h = strut(a, 2.5, inception=gate)
+        s, v, u, h = strut(a, 2.5, inception=gate, rate=3.0)         # rate 3: the cavity reaches equilibrium within the 4 chords of each step
         if prev is not None:
             carry_state(prev[1], prev[0], v, s)
-        cl = run(s, v, u); st = v.vent.state[id(s)]
+        cl = run(s, v, u, T=4.0); st = v.vent.state[id(s)]
         up.append(dict(alpha=a, CL=cl, regime=st["regime"], active=float(np.mean(st["active"])), route=st["route"]))
         print(f"  up   alpha = {a:4.1f}  CL = {cl:.4f}  regime {st['regime']}  ventilated fraction {np.mean(st['active']):.2f}  route {st['route']}")
         prev = (s, v)
     down = []
     for a in np.arange(20.0, 1.9, -2.0):
-        s, v, u, h = strut(a, 2.5, inception=gate)
+        s, v, u, h = strut(a, 2.5, inception=gate, rate=3.0)
         carry_state(prev[1], prev[0], v, s)
-        cl = run(s, v, u); st = v.vent.state[id(s)]
+        cl = run(s, v, u, T=4.0); st = v.vent.state[id(s)]
         phi = np.degrees(st["phi_bar"]) if st["phi_bar"] is not None else float("nan")
         down.append(dict(alpha=a, CL=cl, regime=st["regime"], active=float(np.mean(st["active"])), phi_bar=phi, route=st["route"]))
         print(f"  down alpha = {a:4.1f}  CL = {cl:.4f}  regime {st['regime']}  ventilated fraction {np.mean(st['active']):.2f}  phi_bar {phi:5.1f}  route {st['route']}")
