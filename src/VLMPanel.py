@@ -42,7 +42,6 @@ class VLMPanel:
         versor, chord length, width and area, starting from panel's vertices.
         """
         p = self.pnt
-        v = self.vrt
         # Compute representative panel's geometric parameters
         c_avg = 0.5 * (p[2] - p[1] + p[3] - p[0])  # average chord vector
         w_avg = 0.5 * (p[2] - p[3] + p[1] - p[0])  # average span vector
@@ -57,12 +56,10 @@ class VLMPanel:
             ai += np.cross(pi, qi)
         av = 0.5 * ai
         a = np.linalg.norm(av)
-        if a > 0.0:
-            n = av / a
-        else:
-            #Degenerate cells with zero area
-            print(f"Degenerate panel {i} with {len(p)} vertices")
-
+        if a <= 0.0:
+            # Degenerate cell with zero area: the normal is undefined
+            raise ValueError(f"Degenerate panel with zero area, vertices: {np.array(p).tolist()}")
+        n = av / a
 
         self.ctr    = cp
         self.normal = n

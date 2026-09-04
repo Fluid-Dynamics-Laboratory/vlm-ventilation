@@ -1,9 +1,10 @@
 import numpy as np
 import copy as copy
-import sys
 
-sys.path.append("./src/")
-from src.VLMPanel import VLMPanel
+try:
+    from .VLMPanel import VLMPanel      # imported as a package, e.g. from src.VLMSurface import VLMSurface
+except ImportError:
+    from VLMPanel import VLMPanel       # src/ is on sys.path, e.g. sys.path.append("./src/")
 
 class VLMSurface:
     """ 
@@ -26,7 +27,8 @@ class VLMSurface:
         self.symmetric = sym        # True for a symmetric wing
 
         # Discretization parameters
-        self.N         = n          # number of spanwise pannels before an eventual symmetry
+        self.n_side    = n          # number of spanwise pannels per side, as given in input
+        self.N         = 2*n if sym else n  # total number of spanwise pannels, after an eventual symmetry
         self.M         = m          # number of chordwise pannels
         self.spacing   = space      # True for a cosine spacing at the tips
 
@@ -89,11 +91,11 @@ class VLMSurface:
             p      -> panels corner points
             r      -> ring corner points - same than panel if it's a wake
             w      -> 0 for wing - 1 for wake
-            n      -> number of panels in the spanwise direction            
+            n      -> number of panels in the spanwise direction
+            b      -> wing span, passed to each panel
         Output:
             panels -> list of panels
         """
-        b = self.span
         m = round(np.size(p)/(3*(n+1)))-1       # number of panels in chordwise direction
         panels = []    
         for i in range(m):
@@ -141,7 +143,7 @@ class VLMSurface:
         Build the wing panels and rings, will create self.wing and self.wing_panels
         """
         m = self.M
-        n = self.N
+        n = self.n_side       # panels per side, so that _build_wing can be called more than once
         b     = self.span
         alpha = self.aoa
         beta  = self.drift
@@ -182,8 +184,8 @@ class VLMSurface:
         # take care of the symmetry
         if self.symmetric :
             p_yaw  = self._symmetry(p_yaw, merge=True, norm=np.array([0,0,1]), p=np.array([0,0,0]), n=n)
-            self.N = 2*n
-            n      = self.N           # double n for the rest of the code
+            n = 2*n                   # double n for the rest of the code
+        self.N = n
 
         self.wing["real"] = p_yaw
         self._apply_twist()
@@ -211,7 +213,7 @@ class VLMSurface:
         self.wing["real"]        = r_earth
         self.edges["middle"] = r_earth[-(n+1):]                                    # get the trailing edge for the shedding
         self.edges["left"]   = r_earth.reshape(m+1, n+1, 3)[:,0,:].reshape(m+1,3)  # get the left tip
-        self.edges["right"]  = r_earth.reshape(m+1, n+1, 3)[:,n,:].reshape(m+1,3)  # get the left tip
+        self.edges["right"]  = r_earth.reshape(m+1, n+1, 3)[:,n,:].reshape(m+1,3)  # get the right tip
 
         # boundary condition
         if self.boundary:

@@ -1,5 +1,4 @@
 import numpy as np
-import copy as copy
 import numba as nb
 
 
@@ -48,7 +47,7 @@ class VLMSolver:
         ctrl  = []
         norm  = []
         N_tot = 0
-        r_min = 100
+        r_min = np.inf
         for surface in self.surfaces :
             r_surf = np.linalg.norm(surface.wing["real"][surface.N] - surface.wing["real"][surface.N-1])   
             if r_surf < r_min :
@@ -255,8 +254,8 @@ class VLMSolver:
         surfaces = self.surfaces
         u_inf  = np.tile(u_inf, (n,1))   # n would return a 1D array [u_x, u_y, u_z, u_x, u_y, u_z, ...] the tuple parameters is needed to reshape it in a (n, 3) array
         b = np.zeros(n)
-        if np.size(surfaces[0].wake["real"]["middle"]) == 0 :
-            v = np.tile(np.array([0,0,0]), (n,1))
+        if all(np.size(surface.wake["real"]["middle"]) == 0 for surface in surfaces) :   # no wake yet (first solve)
+            v = np.zeros((n,3))
         else :
             c1, c2, gamma_v = self._full_vectorize(False)
             v = self._induced_velocity(ctrl, c1, c2, gamma_v, self.rc*self.ratio)                 # velocity induced at each control point by the wake vortex rings
@@ -320,8 +319,6 @@ class VLMSolver:
             ctrl    = np.array([p.ctr for p in panels])
             normals = np.array([p.normal for p in panels])
             u_inf   = np.tile(u_inf, (n*m, 1))
-            dp      = []
-            print("gamma :", gamma)
             d_gam_i = np.concatenate([gamma[n:],gamma_w["middle"][:n]]) - np.concatenate([np.zeros_like(gamma[:n]), gamma[:n*(m-1)]])     # delta circulation at each control point in the chordwise direction   
             # delta circulation at each control point in the spanwise direction
             if surface.tip_shed == "both":  
@@ -335,14 +332,11 @@ class VLMSolver:
                 d_gam_j = np.hstack([gamma.reshape(m, n)[:,1:],gamma.reshape(m, n)[:,-1][:,None]]).reshape(-1) - np.hstack([gamma_w["left"].reshape(m,n_w)[:,-1][:,None], gamma.reshape(m, n)[:,:-1]]).reshape(-1)
             else :
                 d_gam_j = np.hstack([gamma.reshape(m, n)[:,1:],gamma.reshape(m, n)[:,-1][:,None]]).reshape(-1) - np.hstack([gamma.reshape(m, n)[:,0][:,None], gamma.reshape(m, n)[:,:-1]]).reshape(-1)
-            print("dekta gam I : ",d_gam_i)
-            print("delta gam J : ",d_gam_j)
-            
             taux_i  = np.array([p.chord/(np.linalg.norm(p.chord)**2) for p in panels])          # chordwise unit vector divided by the mean chord length, for each panel
             taux_j  = np.array([p.width/(np.linalg.norm(p.width)**2) for p in panels])          # spanwise unit vector divided by the mean width, for each panel
             S       = np.array([p.area for p in panels])                                        # area of each panel
             c1, c2, gamma_v = self._full_vectorize(False)
-            V       = u_inf + self._induced_velocity(ctrl, c1, c2, gamma_v)
+            V       = u_inf + self._induced_velocity(ctrl, c1, c2, gamma_v, self.rc*self.ratio)
             dp      = np.sum(V * (taux_i*d_gam_i[:,None]/2 + taux_j*d_gam_j[:,None]/2), axis=1) 
             dF      = -dp[:,None]*S[:,None]*normals                                  
             F_tot   = np.sum(dF, axis = 0)
@@ -385,6 +379,8 @@ class VLMSolver:
                 theta = np.linspace(0, np.pi/2, round(t/dt))  
                 dta = t*(1-np.cos(theta))
                 dta = dta - np.concatenate([np.array([0]), dta[:-1]])
+            case _ :
+                raise ValueError(f"Unknown time step distribution '{distribution}', expected 'classic' or 'cosine'")
         for s in range(round(t/dt)):
             n_gamma = 0                 # give the start of Gamma in Gamma_tot for each surface
             for surface in surfaces:
