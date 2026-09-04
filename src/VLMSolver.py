@@ -419,6 +419,17 @@ class VLMSolver:
             F_tot   = np.sum(dF, axis = 0)
             surface.loads = F_tot
 
+    def _solve_step(self, s, dt):
+        """
+        Solve the circulation at step s from the current right hand side. The base solver returns inv(A) b; a derived
+        solver may replace the linear system (e.g. mixed unknowns on cavity panels). -> Gamma_tot (N_tot,)
+        """
+        return self._inv_A @ self.b
+
+    def _after_step(self, s, dt):
+        """Hook called after the circulations of step s are stored and before the wake roll-up. No-op in the base solver."""
+        return None
+
     def _time_sim(self, t, dt, distribution):
         """ 
         Do the time stepping simulation with the wake relaxation
@@ -461,6 +472,7 @@ class VLMSolver:
             if dt_A is None or abs(dta[s]-dt_A) > 1e-12*abs(dt_A) :     # A depends on dt through the newly shed rings
                 self._build_A(dta[s])
                 inv_A = np.linalg.inv(self.A)
+                self._inv_A = inv_A
                 dt_A  = dta[s]
             for surface in surfaces:
                 n, m   = surface.N, surface.M 
@@ -478,7 +490,7 @@ class VLMSolver:
                 surface._update_wake([wake, l_wake, r_wake])        # updating the wake for the next b computation
             # right hand side from the older wake rings, solve for the wing and the newly shed rings
             self._build_b()
-            Gamma_tot = inv_A @ self.b
+            Gamma_tot = self._solve_step(s, dta[s])             # inv_A @ b, or a derived solver's mixed system (cavities)
             n_gamma = 0                 # give the start of Gamma in Gamma_tot for each surface
             for surface in surfaces:
                 n, m   = surface.N, surface.M 
@@ -488,6 +500,7 @@ class VLMSolver:
                 surface.gamma_wake["left"]   = np.hstack([surface.gamma_wake["left"].reshape(m, s), Gamma.reshape(m, n)[:,0].reshape(m, 1)]).reshape(-1)            # same with vertical concatenation
                 surface.gamma_wake["right"]  = np.hstack([Gamma.reshape(m, n)[:,n-1].reshape(m, 1), surface.gamma_wake["right"].reshape(m, s)]).reshape(-1)
                 n_gamma += n*m                                      # updating the position in the total circulation
+            self._after_step(s, dta[s])                             # hook for a derived solver (regime update); no-op here
             # simulate the wake rollup
             c1, c2, gamma_v = self._full_vectorize(True)            # getting all the segments (wing + wake) that induce velocity
             for surface in surfaces:
