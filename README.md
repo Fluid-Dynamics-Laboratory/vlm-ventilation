@@ -22,3 +22,25 @@ The solver lives in `src/` (`VLMPanel`, `VLMSurface`, `VLMSolver`). It can be im
 The rings shed at the current time step from the trailing edge and from the tips carry the current circulation of the panels they are shed from and are part of the influence matrix (implicit Kutta condition). The lift is evaluated with the linearised Kutta-Joukowski theorem; the induced-velocity contribution is kept apart in `surface.loads_induced`.
 
 The study behind these choices is in `docs/tip_loading/`.
+
+## Ventilated cavity and flow regimes (branch `vent/cavity-regime`)
+
+`src/VLMCavity.py` adds to the solver a sheet cavity on the suction side of each section, at
+the pressure of an atmospheric cavity at that depth, whose effect on the circulation and the
+loads is solved on the lattice (linearised partial-cavity theory, verified against Acosta 1955),
+and a hysteretic regime machine (fully wetted, partially and fully ventilated) with formation
+by an inception signal, persistence, and elimination by the re-entrant jet criterion of
+Harwood, Young and Ceccio (2016). `src/vent_section.py` is the closed-form sectional reference,
+reused from I. M. Viola's bem-fem-fsi (MIT). Model, verification, validation and limitations:
+`docs/cavity/README.md`.
+
+```python
+from VLMCavity import CavitySolver, stall_gate
+vlm = CavitySolver([surface], np.array([U, 0, 0]), "antisymmetric", 0.05, 0.4, g=9.81, inception=stall_gate(14.5))
+vlm._time_sim(T, DT, "classic"); vlm._kuttas_loads()
+vlm.vent.report(surface)          # regime, cavity length and centre of pressure of every section
+```
+
+This branch also corrects the reference length of the cutoff in the base solver: it is now the
+smallest panel dimension, width or chord, so that wide panels (high aspect ratio with few
+sections) no longer exclude neighbouring segments from the influence matrix.
