@@ -137,7 +137,7 @@ and are the recommended replacement for the final validation below $Re = 5\times
 
 ## 5 Validation against published scalars
 
-All cases: `python docs/inception/validate.py` from the repository root, about 20 min.
+All cases: `python docs/inception/validate.py` from the repository root, about 25 min, with the NeuralFoil table (Sect. 4).
 Strut of Harwood et al.: NACA 0009-type section, chord 0.2794 m (assumed), $AR_h = 1$,
 12 sections over the immersion, 5 chordwise panels, antisymmetric image, three chord
 lengths of travel.
@@ -146,32 +146,32 @@ lengths of travel.
 
 | $Fn_h$ | $Re_c$ | $\alpha_\text{sep}(Re_c)$ | predicted inception |
 |---|---|---|---|
-| 1.5 | $6.9\times10^5$ | 11.0° | 23° |
-| 2.0 | $9.3\times10^5$ | 11.8° | 24° |
-| 2.5 | $1.2\times10^6$ | 12.2° | 24° |
-| 3.5 | $1.6\times10^6$ | 12.7° | 25° |
+| 1.5 | $6.9\times10^5$ | 12.5° | 24° |
+| 2.0 | $9.3\times10^5$ | 12.9° | 25° |
+| 2.5 | $1.2\times10^6$ | 13.5° | 25° |
+| 3.5 | $1.6\times10^6$ | 14.5° | 26° |
 
 Published: Aguiar Ferreira et al. (2026) measure spontaneous inception under steady
 conditions at 20° to above 25° for $Fr$ 1.25 to 2.5 and $AR$ 1 to 1.5, rising with Froude
 number, on a NACA 0010-34. The prediction lies in that range with the same trend, which here
 comes from the Reynolds dependence of the separation incidence. The band parameter does not
-move the result (0.25, 0.5 and 1.0 chord all give 24° at $Fn_h = 2.5$).
+move the result (0.25, 0.5 and 1.0 chord all give 25° at $Fn_h = 2.5$).
 
 **Case 1c, nose route, geometric gate.**
 
 | $Fn_h$ | predicted inception | Harwood et al. (2016) |
 |---|---|---|
-| 1.5 | 11.0° | ca. 14.5° |
-| 2.5 | 12.5° | ca. 14.5° |
-| 3.5 | 13.0° | ca. 14.5° |
+| 1.5 | 12.5° | ca. 14.5° |
+| 2.5 | 13.5° | ca. 14.5° |
+| 3.5 | 15.0° | ca. 14.5° |
 
-The geometric gate reproduces an incidence-only boundary, as Harwood et al. observed. The
-2 to 3° offset is the difference between the separation incidence of a plain NACA 0009 in
-the provisional table and that of the modified section of the experiment, and it is the
-first thing XFOIL polars of the actual section would correct. Harwood et al. formed their
+The geometric gate reproduces an incidence-only boundary, as Harwood et al. observed, within
+1 to 2° of their value over the Froude range; the remaining difference is between the plain
+NACA 0009 of the table and the modified section of the experiment. Harwood et al. formed their
 cavities during acceleration and with perturbations, which is why their boundary sits at the
 lower edge of the bistable region that Aguiar Ferreira et al. later mapped; the two gates
-bracket the two data sets.
+bracket the two data sets. With the provisional inviscid table the same cases gave 23° to 25°
+and 11° to 13°.
 
 **Case 2, tail route** (blunt trailing edge, $\alpha = 10°$): closed at $Fn_h = 0.8$ and
 open at 1.0, 1.5 and 2.5, the threshold being $AR_h^{-1/2} = 0.98$. The threshold is
