@@ -28,10 +28,11 @@ The study behind these choices is in `docs/tip_loading/`.
 `src/VLMInception.py` assesses, after a run, whether atmospheric ventilation incepts on a
 surface and by which route (nose, tail, tip vortex), from the two necessary conditions of
 Harwood, Young and Ceccio (2016): separated sub-atmospheric flow on a section, and a path to
-the free surface. Section data (separation incidence against Reynolds number, minimum pressure
-against incidence) are read from `src/section_data/`; the supplied NACA 0009 table is
-provisional. Model, parameters, validation against published values and limitations:
-`docs/inception/README.md`.
+the free surface. Section data (separation incidence, minimum pressure, separation location and
+a confidence value against incidence and Reynolds number) come by default from NeuralFoil, a
+pure Python surrogate of XFOIL installed with pip, through `SectionData.from_neuralfoil`; any
+table in the same JSON format, for instance XFOIL polars, can replace it. Model, parameters,
+validation against published values and limitations: `docs/inception/README.md`.
 
 ```python
 from section_data import SectionData

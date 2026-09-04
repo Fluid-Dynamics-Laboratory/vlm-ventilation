@@ -13,8 +13,13 @@ plane of the image; the depth is |z| of the section control points):
 
     sigma_c(z) = 2 g |z| / u_inf**2                      cavitation number of an atmospheric cavity
     separated  : alpha_eff >= alpha_sep(Re)               from the section data
-    sub-atm.   : -Cp_min(alpha_eff) >= sigma_c(z)         the suction exceeds the hydrostatic head
+    sub-atm.   : -Cp_min(alpha_eff, Re) >= sigma_c(z)     the suction exceeds the hydrostatic head
     prone      = separated and sub-atmospheric
+
+The section data (section_data.SectionData) come by default from NeuralFoil, a pure Python
+surrogate of XFOIL, with a confidence value per condition; the assessment carries the
+confidence of every section and a `low_confidence` flag when a prone section relies on
+extrapolated data.
 
 Routes for condition B:
 
@@ -87,7 +92,8 @@ def section_state(surface, solver, data, g=9.81, nu=1.0e-6, band=0.5, seal="effe
     cl2d = np.abs(np.asarray(surface.Cl_2d))
     alpha_eff = np.rad2deg(cl2d/(data.a0*np.cos(surface.sweep)))
     alpha_sep = data.alpha_sep(re)
-    cp_min = data.cp_min(alpha_eff)
+    cp_min = data.cp_min(alpha_eff, re)
+    confidence = data.confidence(alpha_eff, re)
     alpha_geo = np.rad2deg(abs(surface.aoa) + abs(surface.drift)) + np.abs(np.rad2deg(_twist(surface, n)))
     alpha_gate = alpha_eff if seal == "effective" else alpha_geo
     separated = alpha_gate >= alpha_sep
@@ -101,6 +107,7 @@ def section_state(surface, solver, data, g=9.81, nu=1.0e-6, band=0.5, seal="effe
     return dict(y=span_coord, depth=depth, chord=chord, sigma_c=sigma_c, Re=re, alpha_eff=alpha_eff,
                 alpha_geo=alpha_geo, alpha_sep=alpha_sep, cp_min=cp_min, separated=separated,
                 sub_atmospheric=sub_atm, prone=prone, in_band=depth <= band*chord, seal=seal,
+                confidence=confidence, low_confidence=bool(np.any(confidence[prone] < 0.5)) if np.any(prone) else False,
                 u=u, h=h, c_mean=c_mean, Fn_h=fnh, AR_h=h/c_mean, Fn_c=fnc)
 
 
@@ -188,11 +195,13 @@ def report(result, data=None):
     if data is not None:
         print(f"section data: {data.name}  [{data.status}]")
     print(f"separation gate: {st['seal']} incidence")
-    print(" depth/c   sigma_c   alpha_eff  alpha_sep   Cp_min  separated  sub-atm  prone")
+    print(" depth/c   sigma_c   alpha_eff  alpha_sep   Cp_min  separated  sub-atm  prone  confidence")
     for i in range(len(st["depth"])):
         print(f" {st['depth'][i]/st['chord'][i]:7.3f} {st['sigma_c'][i]:9.3f} {st['alpha_eff'][i]:10.2f} "
               f"{st['alpha_sep'][i]:10.2f} {st['cp_min'][i]:8.2f} {str(st['separated'][i]):>9s} "
-              f"{str(st['sub_atmospheric'][i]):>8s} {str(st['prone'][i]):>6s}")
+              f"{str(st['sub_atmospheric'][i]):>8s} {str(st['prone'][i]):>6s} {st['confidence'][i]:10.2f}")
+    if st["low_confidence"]:
+        print("WARNING: the section data have a confidence below 0.5 on at least one prone section (extrapolated)")
     print(f"prone fraction of the span: {result['prone_fraction']:.2f}")
     for k, v in result["routes"].items():
         if v is None:

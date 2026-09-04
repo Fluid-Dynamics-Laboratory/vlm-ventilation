@@ -13,8 +13,9 @@ Files
 |---|---|
 | `src/VLMInception.py` | the model: condition A per section, three routes for condition B, `assess`, `report` |
 | `src/section_data.py` | two-dimensional section data (separation incidence, minimum pressure) read from a table |
-| `src/section_data/naca0009.json` | provisional table for a NACA 0009 section |
-| `docs/inception/make_naca0009_table.py` | builds that table and documents its sources |
+| `src/section_data/naca0009_neuralfoil.json` | viscous table for a NACA 0009 from NeuralFoil (default) |
+| `src/section_data/naca0009.json` | provisional inviscid table for a NACA 0009 (fallback) |
+| `docs/inception/make_naca0009_neuralfoil.py`, `make_naca0009_table.py` | build the two tables and document their sources |
 | `docs/inception/validate.py`, `validate.json` | the validation cases of Sect. 5 and their results |
 | `tests/test_inception.py` | unit checks of the section data and of the three routes |
 
@@ -85,24 +86,54 @@ and that point lies within $k\,r_c$ of the free surface ($k = 1$ by default). **
 unvalidated**: no published experiment isolates tip-vortex ventilation of a submerged
 element, and the result carries `validated: False`.
 
-## 4 Section data, provisional
+## 4 Section data
 
-`src/section_data/naca0009.json` holds, for a NACA 0009 section:
+`src/section_data.py` reads a JSON table and answers the model's questions by interpolation in
+incidence and in $\log Re$. Two tables are supplied for the NACA 0009.
 
-- $C_{p,\min}(\alpha)$ for $\alpha$ = 0 to 25°, from a linear-strength vortex panel method
-  (Kuethe and Chow, Sect. 5.10) on the closed-trailing-edge thickness form. It is
-  **inviscid**, so it bounds from above the suction the real section can hold; the
-  sub-atmospheric test is therefore conservative.
-- $\alpha_\text{sep}(Re_c)$ for $Re_c$ = $10^5$ to $9\times10^6$, read to the nearest half
-  degree as the incidence of maximum lift from Sheldahl and Klimas (Sandia report
-  SAND80-2114, 1981) below $10^6$ and Abbott and von Doenhoff (Theory of Wing Sections, 1959)
-  above $3\times10^6$.
-- a base pressure coefficient of $-0.3$ for a blunt trailing edge (Hoerner, Fluid-Dynamic
-  Drag, Ch. 3).
+**Viscous table from NeuralFoil (default), `naca0009_neuralfoil.json`.** NeuralFoil (P.
+Sharpe, MIT licence) is a pure Python surrogate of XFOIL trained on about eight million XFOIL
+runs; it installs with pip, needs no compiler, and evaluates a polar in milliseconds. From its
+outputs `SectionData.from_neuralfoil` derives, on a grid of nine Reynolds numbers from $10^5$
+to $10^7$ and 51 incidences from 0 to 25°:
 
-The table is marked `PROVISIONAL` in the file and in every report that uses it. It should be
-replaced by XFOIL polars in the same format, which would give the separation location, the
-transition and a viscous $C_{p,\min}$. `make_naca0009_table.py` regenerates it.
+- $C_{p,\min}(\alpha, Re) = 1 - \max(u_e/u_\infty)^2$ on the suction side, with the boundary
+  layer included;
+- $\alpha_\text{sep}(Re)$, the incidence of the first lift maximum (stall);
+- $x_\text{sep}(\alpha, Re)$, the first station downstream of transition where the shape factor
+  exceeds 2.8 (turbulent separation);
+- the confidence value of the surrogate, which falls below 0.5 where XFOIL itself would not
+  have converged. The assessment carries it for every section and raises `low_confidence`
+  when a prone section relies on extrapolated data.
+
+`docs/inception/make_naca0009_neuralfoil.py` builds the table and prints the comparison below.
+
+| $Re_c$ | $\alpha_\text{sep}$, NeuralFoil | provisional table | published | confidence at stall | $C_{p,\min}$ at 10°, viscous | inviscid |
+|---|---|---|---|---|---|---|
+| $10^5$ | 8.5° | 8.5° | 9° (Sheldahl & Klimas) | 0.62 | −1.3 | −9.2 |
+| $2\times10^5$ | 9.0° | 9.3° | 9 to 10° | 0.72 | −2.7 | −9.2 |
+| $5\times10^5$ | 11.0° | 10.5° | 10 to 11° | 0.84 | −4.7 | −9.2 |
+| $10^6$ | 13.0° | 12.0° | 12° | 0.93 | −4.5 | −9.2 |
+| $1.6\times10^6$ | 14.5° | 12.6° | 14.5° on Harwood's modified section | 0.95 | −4.5 | −9.2 |
+| $3\times10^6$ | 16.5° | 13.5° | 13 to 14° (Abbott & von Doenhoff) | 0.97 | −4.5 | −9.2 |
+| $10^7$ | 19.0° | 15.0° | 15° | 0.97 | −4.6 | −9.2 |
+
+The surrogate agrees with the published stall incidence to within a degree up to $Re$ =
+$1.6\times10^6$, which covers the towing-tank experiments, and overestimates it by 3 to 4° above
+$3\times10^6$, as XFOIL does for thin sections at high Reynolds number. Its confidence is above
+0.84 for $Re \ge 5\times10^5$ and 0.6 to 0.7 at $10^5$ to $2\times10^5$, where the values
+should be checked against XFOIL runs or measurements. The viscous suction peak is half the
+inviscid one, so the sub-atmospheric test is no longer conservative by a factor of two.
+
+**Provisional table, `naca0009.json`.** Inviscid $C_{p,\min}(\alpha)$ from a vortex panel
+method and stall incidences read from published lift curves; kept for comparison and as the
+fallback when NeuralFoil is not installed (`SectionData.naca0009("provisional")`).
+`make_naca0009_table.py` regenerates it.
+
+**Other sections and XFOIL.** `SectionData.from_neuralfoil(coordinates, name)` builds the table
+for any section from its coordinates. XFOIL polars can be written in the same format, from
+`libxfoil` (conda-forge) or the compiled `xfoil` wrapper on a machine with a Fortran compiler,
+and are the recommended replacement for the final validation below $Re = 5\times10^5$.
 
 ## 5 Validation against published scalars
 
@@ -162,9 +193,11 @@ this module plugs in unchanged at merge.
 
 ## 7 Limitations
 
-- The boundary-layer physics is in the table, not in the model. Reynolds and Weber effects
-  at model scale (Damley-Strnad, Harwood and Young, smp'19, 2019) enter only through
-  $\alpha_\text{sep}(Re)$.
+- The boundary-layer physics is in the table, not in the model. With the NeuralFoil table
+  the Reynolds dependence enters through $\alpha_\text{sep}$, $C_{p,\min}$ and $x_\text{sep}$;
+  Weber effects at model scale (Damley-Strnad, Harwood and Young, smp'19, 2019) do not enter.
+- NeuralFoil is a surrogate of XFOIL and inherits its limits: laminar separation bubbles and
+  post-stall flow are extrapolated, and the confidence value says where.
 - The waterline band and the tip-path factor are provisional parameters.
 - The free surface is the high-Froude image; the model warns below $Fn_c = 1.5$.
 - The tip-vortex route is unvalidated.

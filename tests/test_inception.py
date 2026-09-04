@@ -29,8 +29,15 @@ def test_section_data():
     d = SectionData.naca0009()
     assert d.cp_min(0.0) < 0 and d.cp_min(10.0) < d.cp_min(5.0), "suction must grow with incidence"
     assert d.alpha_sep(1e5) < d.alpha_sep(1e6) < d.alpha_sep(1e7), "separation incidence must grow with Re"
-    assert d.alpha_sep(1e3) == d.alpha_sep(1e5) and d.alpha_sep(1e9) == d.alpha_sep(9e6), "held constant outside the table"
+    re_lo, re_hi = 10**d._re_sep.min(), 10**d._re_sep.max()
+    assert d.alpha_sep(re_lo/100) == d.alpha_sep(re_lo) and d.alpha_sep(re_hi*100) == d.alpha_sep(re_hi), "held constant outside the table"
     assert d.separated(20.0, 1e6) and not d.separated(2.0, 1e6)
+    assert 12.0 <= d.alpha_sep(1e6) <= 14.0, "NACA 0009 stalls at 13 deg near Re 1e6 (published 12 to 14.5)"
+    assert -6 < d.cp_min(10.0, 1e6) < -3, "viscous suction peak at 10 deg is about -4.5"
+    assert np.all(d.confidence(10.0, [5e5, 1e6, 3e6]) > 0.8) and d.confidence(10.0, 1e5) < 0.8
+    # the provisional table still loads and answers the same questions
+    q = SectionData.naca0009("provisional")
+    assert not q.viscous and q.cp_min(10.0) < d.cp_min(10.0, 1e6), "the inviscid suction bounds the viscous one"
 
 
 def test_condition_a_and_nose():
