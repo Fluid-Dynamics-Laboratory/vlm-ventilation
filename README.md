@@ -22,3 +22,20 @@ The solver lives in `src/` (`VLMPanel`, `VLMSurface`, `VLMSolver`). It can be im
 The rings shed at the current time step from the trailing edge and from the tips carry the current circulation of the panels they are shed from and are part of the influence matrix (implicit Kutta condition). The lift is evaluated with the linearised Kutta-Joukowski theorem; the induced-velocity contribution is kept apart in `surface.loads_induced`.
 
 The study behind these choices is in `docs/tip_loading/`.
+
+## Ventilation inception (branch `vent/inception`)
+
+`src/VLMInception.py` assesses, after a run, whether atmospheric ventilation incepts on a
+surface and by which route (nose, tail, tip vortex), from the two necessary conditions of
+Harwood, Young and Ceccio (2016): separated sub-atmospheric flow on a section, and a path to
+the free surface. Section data (separation incidence against Reynolds number, minimum pressure
+against incidence) are read from `src/section_data/`; the supplied NACA 0009 table is
+provisional. Model, parameters, validation against published values and limitations:
+`docs/inception/README.md`.
+
+```python
+from section_data import SectionData
+import VLMInception as vi
+result = vi.assess(surface, vlm, SectionData.naca0009(), g=9.81, nu=1e-6)   # after vlm._kuttas_loads()
+vi.report(result)
+```
