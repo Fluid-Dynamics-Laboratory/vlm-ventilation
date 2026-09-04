@@ -537,6 +537,7 @@ class CavitySolver(VLMSolver):
                     # below it the cavity washes out at the rate limit and the flow rewets
                     gate_open = st["forced"] is not None
                     if not gate_open and self.vent.inception is not None:
+                        self._kuttas_loads()                                  # the predicate reads the sectional lift
                         gate_open = bool(self.vent.inception(surface, self)["incepts"])
                     if not gate_open:
                         # the re-entrant jet destroys the cavity within a few convective times (Harwood et al.

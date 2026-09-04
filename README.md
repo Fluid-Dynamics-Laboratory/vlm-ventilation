@@ -1,4 +1,6 @@
 # lifting_line_method-cavity_flow
+
+**Start here:** `docs/report/methods_and_validation.md` describes the whole code (vortex lattice method, section data, inception, cavity and regimes), how to run it, and the validation plan with the data to digitise. Branch `vent/integration` contains everything; `vent/inception` and `vent/cavity-regime` hold the two models separately.
 A lifting-line method implementation to model the effects of dominant physics acting on a surface-piercing strut in ventilated ﬂow
 
 ## Running
