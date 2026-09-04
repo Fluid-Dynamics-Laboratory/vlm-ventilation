@@ -3,3 +3,4 @@ numba
 matplotlib
 ipympl
 jupyter
+neuralfoil
