@@ -28,7 +28,7 @@ class VLMSolver:
         self.b = None       # right hand side
 
         # Numerical parameters
-        self.rc      = None       # minimum panel width - reference length of the cutoff distance
+        self.rc      = None       # smallest panel dimension (width or chord) - reference length of the cutoff distance
         self.c_ref   = None       # mean chord - reference length of the vortex core radius
         self.core    = None       # vortex core radius [m] = ratio * c_ref
         self.ratio   = ratio      # vortex core radius / mean chord, for the wake roll-up and the induced-velocity loads.
@@ -56,9 +56,12 @@ class VLMSolver:
         r_min = np.inf
         chords = []
         for surface in self.surfaces :
-            r_surf = np.linalg.norm(surface.wing["real"][surface.N] - surface.wing["real"][surface.N-1])   
-            if r_surf < r_min :
-                r_min = r_surf
+            # smallest panel dimension of the lattice, width or chord: the cutoff is a fraction of it, so that no
+            # control point ever falls inside the cutoff of a neighbouring segment whatever the panel aspect ratio
+            for panel in surface.wing_panels["real"] :
+                r_surf = min(np.linalg.norm(panel.width), np.linalg.norm(panel.chord))
+                if r_surf < r_min :
+                    r_min = r_surf
             N_tot += surface.N * surface.M
             for panel in surface.wing_panels["real"] :
                 ctrl.append(panel.ctr)     # we compute the normals and control points vector only once
