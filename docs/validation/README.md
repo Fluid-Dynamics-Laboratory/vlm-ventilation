@@ -8,8 +8,8 @@ Weber and Brebner (1958). The raw curves are in `data/raw/` with their provenanc
 (`data/raw/README.md`); `import_digitised.py` converts them into the template format of
 `data/TEMPLATE.csv`, one CSV per source and quantity; `validate.py` runs the code at the
 conditions of every curve and writes `validate.json` and Figures 1 to 4. The report
-`docs/report/methods_and_validation.md`, Sect. 10, places these results in the context of the
-validation plan. All runs use the numerical settings of the report: 12 sections and eight
+`docs/report/methods_and_validation.md` (also as HTML and PDF), Sects. 10.2 to 10.6, presents
+the same results for a reader who does not know the code. All runs use the numerical settings of the report: 12 sections and eight
 chordwise panels on the strut, cosine spacing, a time step of 0.05 chords and three chords of
 travel, unless stated otherwise.
 

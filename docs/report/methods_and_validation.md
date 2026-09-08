@@ -1,4 +1,4 @@
-# A vortex lattice method with ventilation: methods, usage and validation plan
+# A vortex lattice method with ventilation: methods, usage and validation
 
 *Repository `Fluid-Dynamics-Laboratory/vlm-ventilation`, branch `vent/integration`. September 2026.*
 
@@ -7,8 +7,8 @@ how well it does against them. It is written for an engineering undergraduate wh
 first course in aerodynamics and knows what a vortex, a boundary layer and a lift coefficient
 are. Section 1 explains the problem and the plan of the code. Sections 2 to 8 are the methods,
 in the order in which the code executes them. Section 9 shows one complete run. Section 10 is
-the validation: the plan, the curves digitised so far and the comparison with the code, which
-is detailed in `docs/validation/README.md`. Section 11 lists what the code does not do.
+the validation: which measured curves test the code, how the code compares with the ones
+digitised so far, and what remains to be digitised. Section 11 lists what the code does not do.
 
 Every quantity is nondimensional unless a unit is stated. Symbols with a hat, such as $\hat c$,
 are dimensional; the code itself works in metres, seconds and radians.
@@ -24,7 +24,7 @@ are dimensional; the code itself works in metres, seconds and radians.
 7. Cavity model
 8. Regime machine
 9. A complete run
-10. Validation plan, digitised data and results
+10. Validation against measured curves
 11. Limitations
 12. References
 
@@ -178,8 +178,9 @@ panel dimension (Sect. 4.6).
 | `python docs/inception/validate.py` | inception against published values | 25 min |
 | `python docs/cavity/validate.py` | ventilated loads, closure angle and hysteresis on the strut of Harwood et al. | 20 min |
 | `python docs/report/example_end_to_end.py` | the complete run of Sect. 9 | 5 min |
+| `python docs/report/build_html.py --pdf` | rebuilds this document as HTML and PDF from the Markdown source | 1 min |
 | `python docs/validation/import_digitised.py` | converts the raw digitised curves of `docs/validation/data/raw/` into the template format | 1 s |
-| `python docs/validation/validate.py` | compares the code with every digitised curve in `docs/validation/data/` (Sect. 10.5) | 25 min |
+| `python docs/validation/validate.py` | compares the code with every digitised curve in `docs/validation/data/` (Sects. 10.2 to 10.5) | 25 min |
 
 Each script prints its results and writes a JSON file next to itself. The first run of any
 script takes an extra minute while Numba compiles the kernel.
@@ -194,7 +195,7 @@ src/VLMCavity.py, vent_section.py               cavity model and regime machine 
 tests/                                          unit checks
 docs/tip_loading/                               convergence study and its report (Sect. 4.7)
 docs/inception/, docs/cavity/                   per-model documentation and validation scripts
-docs/report/                                    this document, its figures, the complete run
+docs/report/                                    this document (Markdown, HTML and PDF), its figures, the complete run
 docs/validation/                                digitised data, the importer and the comparison script (Sect. 10)
 vlm_unsteady_wake.ipynb                         the working notebook
 ```
@@ -576,7 +577,7 @@ campaigns, and Figure 8.1 the hysteresis loop.
 
 The code is 5 to 15 % below the semi-empirical relation with the same trend; both lie in the
 50 to 70 % loss reported at high incidence. Against the measured lift curves at the same
-condition, digitised later, the code is within 1 % on average (Sect. 10.5). At the published washout condition, $\alpha = 20°$
+condition, digitised later, the code is within 1 % on average (Sect. 10.4). At the published washout condition, $\alpha = 20°$
 and $Fn_h = 1.5$, the computed closure angle at mid-depth is 34.5° against the measured 40.75°.
 
 ![Hysteresis loop](figB_hysteresis.png)
@@ -641,138 +642,321 @@ data give a stall incidence of 13.5° at this Reynolds number), one step earlier
 centre of pressure moves from 0.27 to 0.29 chords forward of mid-chord wetted to 0.19 ventilated,
 the supercavitating value $3c/16$.
 
-## 10 Validation plan, digitised data and results
+## 10 Validation against measured curves
 
-### 10.1 What the code claims and what would test it
+### 10.1 What is tested, and by which data
 
-The claims of Sects. 4 to 8 were first tested against *scalar* values quoted in the papers.
-A detailed validation needs the measured curves themselves. Table 10.1 lists them in order of
-value, with the code output each one tests, the script that compares them and the state of each
-item after the digitisation of Orain (2026), whose results are in Sect. 10.5.
+The checks of Sects. 4 to 8 compared the code with *single values* quoted in the papers: a lift
+coefficient at one incidence, a closure angle at one condition. A validation needs the measured
+*curves*, so that trends with incidence, Froude number and aspect ratio are tested and not only
+one point on them. Table 10.1 lists the curves that would test each part of the code, in order
+of value. Orain (2026) digitised items 1, 5, 6 and 9 from the published figures; Sects. 10.2 to
+10.5 compare them with the code and Sect. 10.6 draws the conclusions. The remaining items are
+still to be digitised, and Sect. 10.7 explains how.
 
-*Table 10.1. Data to digitise.*
+*Table 10.1. Measured curves that test the code, and the state of each comparison.*
 
-| # | Source and figure | Quantity | Conditions | Tests | Script | State |
+| # | Source | Quantity | Conditions | What it tests | Script | State |
 |---|---|---|---|---|---|---|
-| 1 | Harwood et al. (2016), FW lift curves | $C_L(\alpha)$, FW | $AR_h$ = 0.5, 1, 1.5; $Fn_h$ = 1.0 to 4.5 | the wetted solver with the antisymmetric image, on which everything rests | `docs/validation/validate.py`, Case B | done, Sect. 10.5 |
-| 2 | Harwood et al. (2016), Fig. 16, regime map | regime of each point, and how it was reached (spontaneous, perturbed, accelerating) | $\alpha$ versus $Fn_h$, $AR_h = 1$ | the geometric gate and the bistable band (Sects. 6, 8) | `docs/inception/validate.py`, Case 1c | to digitise |
-| 3 | Aguiar Ferreira et al. (2026), inception angle against $Fr$, and their revised stability map | $\alpha_\text{incep}(Fr)$ with the trigger of each point | both profiles, $AR$ = 1, 1.5 | the effective gate, the Reynolds trend, the tail threshold | `docs/inception/validate.py`, Cases 1, 2 | to digitise |
+| 1 | Harwood et al. (2016), fully wetted lift curves | $C_L(\alpha)$, FW | $AR_h$ = 0.5, 1, 1.5; $Fn_h$ = 1.0 to 4.5 | the wetted solver with the free-surface image, on which everything else rests | `docs/validation/validate.py`, Case B | done, Sect. 10.3 |
+| 2 | Harwood et al. (2016), Fig. 16, regime map | regime of each point and how it was reached | $\alpha$ versus $Fn_h$, $AR_h = 1$ | the geometric gate and the bistable band (Sects. 6, 8) | `docs/inception/validate.py`, Case 1c | to digitise |
+| 3 | Aguiar Ferreira et al. (2026), inception angle against Froude number, stability map | $\alpha_\text{incep}(Fr)$ with the trigger of each point | two sections, $AR$ = 1, 1.5 | the effective gate, the Reynolds trend, the tail threshold | `docs/inception/validate.py`, Cases 1, 2 | to digitise |
 | 4 | Damley-Strnad et al. (2019), Fig. 5 | inception and rewetting $C_L$ against $Fn_h$ | compiled campaigns | a global check over a wide Froude range | new case in `docs/inception/validate.py` | to digitise |
-| 5 | Harwood et al. (2016), FV lift; drag and yawing moment; Damley-Strnad et al. (2019), Fig. 3 | $C_L$, $C_D$, $C_M(\alpha)$, FV | $Fn_h$ = 1.0 to 4.5; $AR_h$ = 0.5, 1, 1.5 | the cavity loads, and through the moment the centre of pressure, which no lift curve tests | `docs/validation/validate.py`, Case C | lift done, Sect. 10.5; drag and moment to digitise |
-| 6 | Harwood et al. (2016), cavity profile, and closure angles of their Fig. 8 | $L(z)$; local closure angles | $\alpha = 10°$, $Fn_h = 1.5$, $AR_h = 1$, and others | the only local check of the cavity model (Sect. 7.2) | `docs/validation/validate.py`, Case D | profile done, Sect. 10.5; closure angles to digitise |
+| 5 | Harwood et al. (2016), fully ventilated lift; drag and yawing moment; Damley-Strnad et al. (2019), Fig. 3 | $C_L$, $C_D$, $C_M(\alpha)$, FV | $Fn_h$ = 1.0 to 4.5; $AR_h$ = 0.5, 1, 1.5 | the cavity loads and, through the moment, the centre of pressure | `docs/validation/validate.py`, Case C | lift done, Sect. 10.4; drag and moment to digitise |
+| 6 | Harwood et al. (2016), cavity photograph, closure angles of their Fig. 8 | $L(z)$; local closure angles | $\alpha = 10°$, $Fn_h = 1.5$, $AR_h = 1$ | the only local check of the cavity model (Sect. 7.2) | `docs/validation/validate.py`, Case D | profile done, Sect. 10.5; closure angles to digitise |
 | 7 | Harwood et al. (2016), washout points and one hysteresis loop | $Fn_h$ at washout against $C_L$; $C_L(\alpha)$ up and down | fixed $Fn_h$ | the re-entrant-jet criterion and the band width (Sect. 8) | `docs/cavity/validate.py`, Cases B, C | to digitise |
-| 8 | Wadlin, Ramsen and Vaughan (1955, NACA TN 3079); Kiceniuk (1954) | lift against depth of submersion; onset of ventilation | rectangular plates and hydrofoils beneath the surface | the tip-vortex route, which has no validation at all | new case in `docs/inception/validate.py` | to digitise |
-| 9 | Rodriguez (1990); Lamar (1974); Bertin and Smith (1998); Weber and Brebner (1958) | $C_L(\alpha)$ of wings without free surface | rectangular $AR$ = 1, 3; 45° swept $AR$ = 5 | the wetted lattice, tip shedding and sweep | `docs/validation/validate.py`, Case A | done, Sect. 10.5 |
+| 8 | Wadlin, Ramsen and Vaughan (1955); Kiceniuk (1954) | lift against depth of submersion; onset of ventilation | plates and hydrofoils beneath the surface | the tip-vortex route, which has no validation at all | new case in `docs/inception/validate.py` | to digitise |
+| 9 | Rodriguez (1990); Lamar (1974); Bertin and Smith (1998); Weber and Brebner (1958) | $C_L(\alpha)$ of wings without free surface | rectangular $AR$ = 1, 3; 45° swept $AR$ = 5 | the wetted lattice, tip shedding and sweep, without the free surface | `docs/validation/validate.py`, Case A | done, Sect. 10.2 |
 
-Two items are not digitisation but are needed alongside: the **section coordinates** of
-Harwood's modified NACA 0009, including its trailing-edge thickness and tip shape, so that the
-section table is built for the section tested; and the **chord and immersion** of each campaign,
-since the Reynolds number enters the separation criterion.
+The digitised curves are in `docs/validation/data/`, the raw files with their provenance in
+`docs/validation/data/raw/`, and `docs/validation/validate.py` runs the code at the conditions
+of every point and writes `validate.json` and Figures 10.1 to 10.4 (25 min). All runs use the
+settings of the report: on the strut, 12 sections over the immersion and eight chordwise
+panels, cosine spacing, a time step of 0.05 chords and three chords of travel. Two measures are
+used throughout. The *lift slope* is the slope of a straight line through the origin fitted to
+the lift curve up to 10°, in units of lift coefficient per radian of incidence; a flat plate of
+infinite span has $2\pi$ = 6.28. The *mean difference* is the average, over the incidences of
+the reference curve, of the computed lift minus the reference lift, divided by the reference
+lift; a positive value means the code predicts more lift than the reference.
 
-### 10.2 How to digitise
+### 10.2 Wings without a free surface
 
-1. Obtain the figure at the highest resolution available (the publisher's PDF, not a screen
-   capture). Check first whether the data exist as tables: Harwood's may be available from the
-   authors, and the 2026 paper is recent enough that its authors are likely to share theirs.
-2. Use WebPlotDigitizer (https://automeris.io) or an equivalent. Calibrate both axes on four
-   known ticks, far apart. For a logarithmic axis, say so in the calibration.
-3. Extract each data series separately, one regime or one Froude number at a time. Record the
-   marker type, because in these papers it encodes the regime or the path.
-4. Estimate the uncertainty as half the marker size in data units, or the error bar where one is
-   drawn.
-5. Check the digitisation by re-plotting the CSV over the original figure, and by comparing two
-   or three values with any quoted in the text.
+The first test removes the free surface, the section data and the cavity, and asks whether the
+lattice alone gives the lift of a wing. Three wings are run: rectangular wings of aspect ratio
+1 and 3, for which Rodriguez (1990) published a free-wake vortex lattice with tip shedding and
+Lamar (1974) reported wind-tunnel measurements, and a rectangular wing of aspect ratio 5 swept
+back by 45°, the textbook example of Bertin and Smith (1998), for which a straight-wake vortex
+lattice result and the measurements of Weber and Brebner (1958) exist. Each wing has 15
+spanwise panels per half-span and five chordwise panels and travels at least three chords and
+two spans; doubling the travel changes the lift at 8° by 0.5 % or less, so the runs have
+reached steady state.
 
-### 10.3 File format
+![Lift curves of the wings](../validation/fig1_wings.png)
+*Figure 10.1. Lift coefficient versus incidence for the code, the reference vortex lattice
+methods and the experiments: (a) rectangular wing, $AR$ = 1; (b) rectangular wing, $AR$ = 3;
+(c) 45° swept wing, $AR$ = 5. In (c) the crosses are the code with tip shedding, which diverges
+below 6°.*
 
-One CSV per source figure in `docs/validation/data/`, named `<author><year>_<figure>.csv`, with
-the columns of `TEMPLATE.csv`:
+*Table 10.2. Lift slope per radian of the code and of the references, and mean difference of
+the code from each reference.*
+
+| Wing | Code | Vortex lattice reference | Experiment | Code minus lattice | Code minus experiment |
+|---|---|---|---|---|---|
+| rectangular, $AR$ = 1, tip shedding | 2.08 | 1.97, Rodriguez (1990), free wake | 1.77, Lamar (1974) | +3 % | +14 % |
+| rectangular, $AR$ = 3, tip shedding | 3.54 | 3.37, Rodriguez (1990), free wake | 3.24, Lamar (1974) | +4 % | +7 % |
+| 45° swept, $AR$ = 5, no tip shedding | 3.50 | 3.45, Bertin and Smith (1998), Tornado | 3.17, Weber and Brebner (1958) | +1 % | +10 % |
+
+On the two rectangular wings the code lies 3 to 4 % above the free-wake lattice of Rodriguez
+over the whole range of incidence (Figure 10.1a, b; Table 10.2), and reproduces the curved lift
+curve of the wing of aspect ratio one: its slope rises from 1.7 per radian at 2° to 2.5 per
+radian at 16°, because the vortices shed from the side edges add lift as the incidence grows.
+The excess over the experiments, 14 % at $AR$ = 1 and 7 % at $AR$ = 3, is the difference
+between a potential-flow lattice and a real wing with a boundary layer, and is of the same size
+as the 17 % noted in Sect. 4.7 for the measurement of Bartlett and Vidal (1955). On the swept
+wing without tip shedding the code is within 1 % of the straight-wake lattice and 10 % above
+the wind-tunnel measurement (Figure 10.1c). The sweep is therefore implemented correctly.
+
+**Tip shedding must be off on a swept wing.** With tip shedding and cosine spacing, the swept
+wing diverges at 2° and 4° within ten time steps, giving lift coefficients of −879 and −498
+after ten chords of travel, while it converges at 6° and above and is then within 3 % of the
+straight-wake lattice (crosses in Figure 10.1c). The mechanism is the following. Tip shedding
+relies on the cancellation, at the tip control point, between the wing's tip-edge segment, which
+is in the influence matrix, and the shed column that coincides with it, which is in the
+right-hand side (Sect. 4.6). This cancellation holds as long as the shed column stays on the
+line of the edge to within a fraction of the cutoff distance, which is 0.4 of the tip panel
+width, or 0.0015 spans with cosine spacing. On the swept wing the tip panel carries 2.7 times
+the circulation of its neighbour after the first step, against 0.65 times on the unswept wing
+of the same aspect ratio, and the roll-up moves the first shed corners by 0.0013 spans, of the
+order of the cutoff; the cancellation is lost and the tip circulation grows without bound. The
+instability does not occur with uniform spacing, without sweep, or without tip shedding. Tip
+shedding models the separation at the side edge of a low-aspect-ratio wing or a strut; on a
+swept wing of moderate aspect ratio, where the flow is attached at the tip, it is neither needed
+nor stable, and `shedding="none"` should be used.
+
+### 10.3 The wetted strut
+
+The second test adds the free surface. The strut of Harwood et al. (2016), of chord 0.2794 m,
+is run fully wetted at immersed aspect ratios 0.5, 1 and 1.5 and incidences from 2.5° to 15°,
+with the lift coefficient on the immersed area $h c$, as in the paper. The antisymmetric image
+of Sect. 4.5 does not depend on the Froude number, so one computed curve per aspect ratio is
+compared with the measurements at every Froude number (Figure 10.2, Table 10.3). Harwood et al.
+also published the lift of their own lifting-line model, which uses the same image; it is shown
+for $AR_h$ = 1.
+
+![Lift curves of the wetted strut](../validation/fig2_strut_FW.png)
+*Figure 10.2. Lift coefficient versus incidence of the fully wetted strut, code against the
+measurements of Harwood et al. (2016) at every Froude number and their lifting-line model: (a)
+$AR_h$ = 0.5; (b) $AR_h$ = 1; (c) $AR_h$ = 1.5. The dotted line in (b) is the code without
+vortex shedding from the waterline edge.*
+
+*Table 10.3. Lift slope per radian of the code and, for each Froude number, of the measurements
+of Harwood et al. (2016), with the mean difference of the code from the measurements in
+brackets.*
+
+| $AR_h$ | Code | $Fn_h$ = 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | 3.5 | 4.5 |
+|---|---|---|---|---|---|---|---|---|
+| 0.5 | 1.13 | – | 1.48 (−21 %) | – | 0.93 (+16 %) | 1.06 (+9 %) | – | 0.98 (+11 %) |
+| 1.0 | 1.65 | – | 1.69 (−2 %) | – | 1.53 (+9 %) | 1.48 (+10 %) | 1.48 (+9 %) | – |
+| 1.5 | 2.12 | 2.37 (−10 %) | 2.09 (0 %) | 2.11 (+1 %) | 2.01 (+7 %) | 1.97 (+5 %) | – | – |
+
+The measured lift slope falls as the Froude number rises, by 13 % between $Fn_h$ = 1.5 and 3.5
+at $AR_h$ = 1, and settles above $Fn_h$ = 2.5. This is the Froude effect that the image cannot
+represent: at low Froude number the surface rises on the pressure side and falls on the suction
+side, which adds lift. The code matches the measurements at $Fn_h$ = 1.5 within 2 % at $AR_h$ =
+1 and 1.5, and is 5 to 10 % above them at $Fn_h \ge 2.5$, where the image is meant to apply. The
+lifting line of Harwood et al., with the same image, gives 1.49 per radian at $AR_h$ = 1, the
+value the measurements settle at; the code is 12 % above it. At $AR_h$ = 0.5 the measurements
+themselves scatter by 50 % between Froude numbers and the code lies within that scatter. A
+further difference is in the shape of the curves: the computed lift curves are convex, with a
+slope that rises from 1.40 per radian at 2.5° to 1.94 per radian at 15° for $AR_h$ = 1, whereas
+the measured curves at $Fn_h \ge 2.5$ are straight to within 3 %.
+
+**Where the excess comes from.** Four variants of the run at $AR_h$ = 1 locate the difference
+(Table 10.4). Doubling the number of sections does not change the slope, so the excess is not a
+resolution effect. The symmetric image, which makes the free surface a rigid wall, nearly
+doubles the lift and confirms the choice of Sect. 4.5. Without any tip shedding the slope falls
+to 1.31, 12 % below the measurements. Shedding from the tip only, and not from the waterline
+edge, gives 1.52, within 3 % of the high-Froude measurements and of the lifting line; the
+sectional lift then goes to zero at the waterline (0.03 at $z/h$ = 0.01, against 0.23 with
+waterline shedding). This is what the physics requires. At high Froude number the free surface
+is a surface of constant pressure; a section at the waterline has atmospheric pressure on both
+of its sides, so its lift, which is a pressure difference, must vanish there. Shedding a vortex
+column from the waterline edge treats that edge like the separated side edge of a wing and keeps
+a finite loading on it; this is the 8 % excess and part of the convexity. All the results of
+Sects. 6 to 9 were obtained with shedding from both edges of the strut. They should be rerun
+with `shedding="right"`, which sheds from the tip only. The lower wetted lift will lower the
+effective incidence of every section, and with it the predicted inception incidence and the
+cavity length, by amounts not yet computed.
+
+*Table 10.4. Numerical variants of the wetted strut at $AR_h$ = 1: lift slope per radian and lift
+coefficient at 10°.*
+
+| Variant | Slope | $C_L$ at 10° |
+|---|---|---|
+| settings of the report: shedding from both edges, antisymmetric image, 12 sections | 1.65 | 0.299 |
+| 24 sections | 1.65 | 0.302 |
+| shedding from the tip only | 1.52 | 0.272 |
+| no tip shedding | 1.31 | 0.229 |
+| symmetric image | 2.92 | 0.522 |
+| measurements at $Fn_h$ = 2.5 to 3.5 | 1.48 to 1.53 | 0.256 to 0.262 |
+
+### 10.4 The ventilated strut
+
+The third test is the cavity model. The cavity is imposed on every section, as an experimenter
+does by perturbing the flow, and the strut is run at incidences from 5° to 30° at each of the
+14 combinations of aspect ratio and Froude number measured by Harwood et al. (2016) in the fully
+ventilated regime (Figure 10.3, Table 10.5).
+
+![Lift curves of the ventilated strut](../validation/fig3_strut_FV.png)
+*Figure 10.3. Lift coefficient versus incidence of the fully ventilated strut for Froude numbers
+from 1.0 to 4.5, code (lines) against the measurements of Harwood et al. (2016) (circles): (a)
+$AR_h$ = 0.5; (b) $AR_h$ = 1; (c) $AR_h$ = 1.5.*
+
+*Table 10.5. Fully ventilated strut: mean difference and largest absolute difference of the
+computed lift coefficient from the measurements over the measured range of incidence, and the
+regime reported by the code at 5°, 10°, ..., 30° (P partially, V fully ventilated).*
+
+| $AR_h$ | $Fn_h$ | Mean difference | Largest difference in $C_L$ | Regimes |
+|---|---|---|---|---|
+| 0.5 | 1.5 | −25 % | 0.106 | PPPPVV |
+| 0.5 | 2.5 | −6 % | 0.027 | PPVVVV |
+| 0.5 | 3.0 | −14 % | 0.054 | PVVVVV |
+| 0.5 | 3.5 | −7 % | 0.053 | PVVVVV |
+| 0.5 | 4.5 | −5 % | 0.049 | VVVVVV |
+| 1.0 | 1.5 | −4 % | 0.047 | PPPPVV |
+| 1.0 | 2.5 | −1 % | 0.029 | PVVVVV |
+| 1.0 | 3.0 | −6 % | 0.050 | PVVVVV |
+| 1.0 | 3.5 | −3 % | 0.059 | PVVVVV |
+| 1.5 | 1.0 | −7 % | 0.069 | PPPPPP |
+| 1.5 | 1.5 | −1 % | 0.026 | PPPVVV |
+| 1.5 | 2.0 | +2 % | 0.037 | PPVVVV |
+| 1.5 | 2.5 | +2 % | 0.022 | PVVVVV |
+| 1.5 | 3.0 | −1 % | 0.041 | PVVVVV |
+
+At $AR_h$ = 1 and 1.5 the ventilated lift is within 7 % of the measurements on average for every
+Froude number, and the largest single difference, 0.07 in lift coefficient, occurs at $Fn_h$ =
+1.0, below the Froude number at which the image is valid. The two trends that matter for a
+foiling boat are reproduced: the lift rises nearly linearly with incidence up to 30°, and falls
+with the Froude number, by a factor 1.8 in the measurements and 2.1 in the code between $Fn_h$
+= 1.5 and 3.5 at 20°. Sect. 8.2 found the code 5 to 15 % below the semi-empirical ratio of
+Damley-Strnad et al. (2019) at $Fn_h$ = 2.5; against the measurements at the same condition it
+is within 1 %. At $AR_h$ = 0.5 the code is 5 to 14 % low for $Fn_h \ge 2.5$ and 25 % low at
+$Fn_h$ = 1.5, where the measured curve is also steeper than at the other Froude numbers. The
+regime reported by the code agrees with the experiment at all points but the lowest: at 5°, and
+at 10° for $Fn_h \le 1.5$, the computed cavity does not reach the tip and the code reports the
+partially ventilated regime where the experiment was fully ventilated; the reason appears in the
+cavity profile below. The wetted lift of the same strut is 5 to 10 % high at $Fn_h \ge 2.5$
+(Sect. 10.3); with the waterline shedding off, the ventilated lift would fall too, by an amount
+not yet computed.
+
+### 10.5 The cavity profile
+
+The lift curves test the cavity model as a whole. The photograph of the cavity in Harwood et al.
+(2016) at $\alpha$ = 10°, $Fn_h$ = 1.5 and $AR_h$ = 1 tests it locally, section by section:
+Orain (2026) digitised the cavity length against depth from the photograph and from the
+lifting-line model of the same paper, together with the sectional lift, effective incidence
+and lift slope of that model. The code is run at the same condition with 12 and 24 sections;
+the two meshes agree within 0.05 chords at every depth (Figure 10.4).
+
+![Cavity profile and sectional quantities](../validation/fig4_profile.png)
+*Figure 10.4. Sectional quantities versus depth at $\alpha$ = 10°, $Fn_h$ = 1.5, $AR_h$ = 1:
+(a) cavity length, code against the photograph and the lifting-line model of Harwood et al.
+(2016); (b) sectional lift, ventilated and wetted; (c) effective incidence and lift slope, code
+against the lifting-line model. In the code $\alpha_\text{eff}$ is $C_l/2\pi$ of the wetted
+solution and $a_0$ is the ventilated $C_l$ divided by that $\alpha_\text{eff}$.*
+
+Between 0.43 and 0.72 of the immersion the computed cavity length is within 10 % of the
+photograph (0.93 against 0.98 chords at $z/h$ = 0.43; 0.50 against 0.53 at 0.69) and closer to
+it than the lifting-line model, which is 10 to 20 % short over the same range (Figure 10.4a).
+Two disagreements bound this range. Near the surface, above $z/h$ = 0.35, the measured cavity
+lengthens to two chords, the edge of the photograph, while the computed one is 1.1 chords at
+$z/h$ = 0.31 and exceeds two chords only within 0.05 of the surface; the lifting-line model
+shows the same defect to a lesser degree. Near the tip, below $z/h$ = 0.75, the code has no
+cavity at all, whereas the photograph shows one that shortens smoothly to zero at the tip (0.37
+chords at $z/h$ = 0.80, 0.07 at 0.96). The cause is a rule of the regime machine (Sect. 8.1): a
+section whose sectional cavity length is shorter than one chordwise panel, 0.125 chords here,
+is declared unable to hold a cavity and is rewetted. The rule cuts the cavity where the
+measured one still covers a third of the chord, and is why the code reports this case, and the
+low-incidence points of Sect. 10.4, as partially rather than fully ventilated. The criterion
+should be on the sectional length itself, not on the panel count. Along the whole depth the
+cavitation number of the code matches the lifting-line model, as it must, both being
+$2 g z/u_\infty^2$.
+
+The sectional lift of the lifting-line model goes to zero at the surface and at the tip
+(Figure 10.4b). The code keeps 0.12 at the surface, because of the waterline shedding discussed
+in Sect. 10.3, and 0.33 at the tip, because of the tip shedding, which the report keeps as the
+model of side-edge separation on a strut. The ventilated lift slope of the code falls to half
+of $2\pi$ at the surface and not to the supercavitating quarter that the lifting-line model
+reaches (Figure 10.4c), because on the lattice the circulation that a section loses is partly
+taken up by its neighbours.
+
+### 10.6 What the validation shows
+
+1. **The lattice is right.** On wings without a free surface it is within 4 % of two published
+   vortex lattice methods and 7 to 14 % above wind-tunnel measurements, the usual excess of
+   potential flow. Sweep is correct. Tip shedding is for low-aspect-ratio unswept wings and
+   struts only: on a swept wing with cosine spacing it diverges below 6°.
+2. **The free-surface image is right at high Froude number, once the waterline edge is treated
+   correctly.** With shedding from the tip only, the wetted strut is within 3 % of the
+   measurements at $Fn_h \ge 2.5$ and of Harwood's lifting line, and the loading vanishes at the
+   surface as it should. With shedding from both edges, the setting used so far, it is 5 to 10 %
+   high. The measured 13 % fall of lift slope between $Fn_h$ = 1.5 and 3.5 is a Froude effect
+   the image cannot represent.
+3. **The cavity model gives the ventilated lift.** Within 7 % of the measurements at $AR_h$ = 1
+   and 1.5 over 14 combinations of Froude number and aspect ratio and incidences from 5° to
+   30°; 5 to 25 % low at $AR_h$ = 0.5.
+4. **The cavity shape is right in the middle of the immersion and wrong at both ends.** Within
+   10 % of the photograph over the middle third; too short within a third of a chord of the
+   surface; absent over the lower quarter because of the one-panel hold criterion.
+
+Two changes follow, neither made yet so that the results above stay reproducible: shed from the
+tip only on a strut, and replace the one-panel hold criterion by one on the sectional length.
+Sects. 6 to 9 should then be rerun. Two things could not be checked: the Froude number of
+Harwood's lifting-line lift curves was not recorded when they were digitised and is taken as
+1.5, and the figure numbers of the source paper are not recorded in the data files.
+
+### 10.7 Digitising the remaining data
+
+The items of Table 10.1 marked "to digitise" follow the same route as the four done. Obtain the
+figure at the highest resolution available, the publisher's PDF rather than a screen capture,
+and check first whether the data exist as tables: the authors of the 2026 paper are likely to
+share theirs. Use WebPlotDigitizer (https://automeris.io) or an equivalent, calibrate both axes
+on four known ticks far apart, and extract each series separately, one regime or one Froude
+number at a time, recording the marker type because in these papers it encodes the regime or the
+path. Take the uncertainty as half the marker size in data units, or the error bar where one is
+drawn. Check the result by re-plotting the CSV over the original figure and by comparing two or
+three values with any quoted in the text. Two items are not curves but are needed alongside: the
+coordinates of Harwood's modified NACA 0009 section, including its trailing-edge thickness, so
+that the section table is built for the section tested; and the chord and immersion of each
+campaign, since the Reynolds number enters the separation criterion.
+
+Keep the raw digitised files in `docs/validation/data/raw/` and add a line to its README stating
+their source. Convert them with `import_digitised.py` into one CSV per source and quantity in
+`docs/validation/data/`, with the columns of `TEMPLATE.csv`:
 
 ```
 source, figure, quantity, regime, path, alpha_deg, Fn_h, AR_h, chord_m, section, value, uncertainty, notes
 ```
 
 `quantity` is one of `CL`, `CD`, `CM`, `L_over_c`, `phi_deg`, `alpha_incep_deg`, `Fn_h_washout`,
-or a sectional quantity of a reference model (`Cl_section`, `a0_over_2pi`, `alpha_eff_over_alpha`,
-`sigma_c`); `regime` is `FW`, `PV` or `FV`; `path` is `steady`, `increasing`, `decreasing`,
-`accelerating` or `perturbed`; a depth coordinate for a cavity profile goes in `notes` as
-`z_over_h=...`. For a wing without free surface `Fn_h` is empty and `AR_h` holds the aspect
-ratio. Leave a cell empty when the quantity does not apply. Raw digitised curves are kept
-verbatim in `data/raw/` with a README that states their provenance, and `import_digitised.py`
-converts them; `validate.py` reads the template files, runs the code at the same conditions and
-writes `validate.json` and the figures. Extend both for each new quantity following the pattern
-of the cases they contain.
-
-### 10.4 Acceptance
-
-A comparison is a success when the code lies within the digitisation uncertainty plus the
-scatter between repeat runs of the experiment, where repeats exist. Where it does not, the
-difference is the result: record it in the corresponding `README.md` with the mechanism you
-believe explains it, as Sects. 6.4, 8.2 and 10.5 do for the disagreements found so far.
-
-### 10.5 Results with the digitised data of Orain (2026)
-
-Items 1, 5 (lift), 6 (profile) and 9 of Table 10.1 were digitised by Orain (2026) and compared
-with the code by `docs/validation/validate.py`; the full account, with the figures and the
-numerical variants, is `docs/validation/README.md`. All differences below are of the code from
-the reference, averaged over the incidences of the reference.
-
-**Wings without free surface** (item 9). The lattice is 3 to 4 % above the free-wake vortex
-lattice of Rodriguez (1990) on rectangular wings of $AR$ = 1 and 3, and 14 and 7 % above the
-experiments reported by Lamar (1974) on the same wings. On a 45° swept wing of $AR$ = 5 without
-tip shedding it is within 1 % of the straight-wake vortex lattice of Bertin and Smith
-(1998) and 10 % above the measurements of Weber and Brebner (1958). *With* tip shedding
-and cosine spacing the swept wing diverges at 2° and 4° within ten time steps: the tip panel of
-a swept wing carries 2.7 times the circulation of its neighbour after the first step, the roll-up
-displaces the shed tip column by a distance of the order of the cutoff, and the cancellation of
-Sect. 4.6 between the edge segment and the shed edge is lost. Tip shedding is therefore for
-unswept wings of low aspect ratio and for struts; use `shedding="none"` for swept wings.
-
-**Wetted strut** (item 1). At $AR_h$ = 1 and 1.5 the code is within 2 % of the measured lift
-at $Fn_h$ = 1.5 and 5 to 10 % above it at $Fn_h \ge 2.5$, where the measured lift slope has
-settled at 1.48 to 1.53 per radian for $AR_h$ = 1, the value of Harwood's lifting line with the
-same image. At $AR_h$ = 0.5 the measurements scatter by 50 % between Froude numbers and the code
-lies within the scatter. The excess at high Froude number is the vortex column shed from the
-waterline edge: with shedding from the tip only the slope at $AR_h$ = 1 falls from 1.65 to 1.52
-per radian, within 3 % of the high-Froude measurements, and the sectional lift vanishes at the
-waterline, as the atmospheric-pressure condition requires. All results of Sects. 6 to 9 were
-obtained with waterline shedding; the strut cases should be rerun with `shedding="right"`.
-
-**Ventilated strut** (item 5). With the cavity imposed on every section, the lift is within 7 %
-of the measurements at $AR_h$ = 1 and 1.5 for all 14 combinations of $Fn_h$ from 1.0 to 3.5
-and $\alpha$ from 5° to 30°, and 5 to 25 % low at $AR_h$ = 0.5. Against the measurements at
-$Fn_h$ = 2.5 and $AR_h$ = 1 the code is within 1 %, where Table 8.1 had it 5 to 15 % below the
-semi-empirical ratio of Damley-Strnad et al. (2019). At 5°, and at 10° for $Fn_h \le 1.5$,
-the code's cavity does not reach the tip and it reports the partially ventilated regime where
-the experiment was fully ventilated.
-
-**Cavity profile** (item 6). At $\alpha$ = 10°, $Fn_h$ = 1.5, $AR_h$ = 1, the sectional
-cavity length is within 10 % of the photograph between 0.43 and 0.72 of the immersion and
-closer to it than Harwood's lifting line. Within 0.35 of the immersion from the surface the
-measured cavity is longer than two chords and the computed one 1.1 chords; below 0.75 of the
-immersion the code has no cavity, because a sectional length shorter than one chordwise panel
-is treated as unable to hold one, whereas the measured cavity shortens smoothly to zero at the
-tip. The hold criterion should be on the sectional length, not on the panel count.
-
-![Validation figures](../validation/fig3_strut_FV.png)
-*Figure 10.1. Lift coefficient versus incidence of the fully ventilated strut for Froude numbers
-from 1.0 to 4.5, code (lines) against the measurements of Harwood et al. (2016) (circles): (a)
-$AR_h$ = 0.5; (b) $AR_h$ = 1; (c) $AR_h$ = 1.5.*
-
-![Cavity profile](../validation/fig4_profile.png)
-*Figure 10.2. Sectional quantities versus depth at $\alpha$ = 10°, $Fn_h$ = 1.5, $AR_h$ = 1:
-(a) cavity length, code against the photograph and the lifting-line model of Harwood et al.
-(2016); (b) sectional lift; (c) effective incidence and lift slope.*
+or a sectional quantity of a reference model (`Cl_section`, `a0_over_2pi`,
+`alpha_eff_over_alpha`, `sigma_c`); `regime` is `FW`, `PV` or `FV`; `path` is `steady`,
+`increasing`, `decreasing`, `accelerating` or `perturbed`; a depth coordinate goes in `notes`
+as `z_over_h=...`. For a wing without free surface `Fn_h` is empty and `AR_h` holds the aspect
+ratio. Add a case to `validate.py` following the pattern of Cases A to D. A comparison is a
+success when the code lies within the digitisation uncertainty plus the scatter between repeat
+runs of the experiment, where repeats exist. Where it does not, the difference is the result:
+record it with the mechanism you believe explains it, as Sects. 10.3 to 10.5 do.
 
 ## 11 Limitations
 
 - The free surface is the high-Froude image; results below $Fn_c = 1.5$ are not validated.
   The measured wetted lift slope falls by 13 % between $Fn_h$ = 1.5 and 3.5 at $AR_h$ = 1
-  (Sect. 10.5), a Froude effect the image cannot represent.
+  (Sect. 10.3), a Froude effect the image cannot represent.
 - Vortex shedding from the waterline edge of a strut keeps a finite loading at the surface and
   raises the wetted lift by 8 % above the high-Froude measurements; shedding from the tip only
-  removes the excess (Sect. 10.5). Tip shedding on a swept wing with cosine spacing diverges at
-  low incidence and must be off.
+  removes the excess (Sect. 10.3). Tip shedding on a swept wing with cosine spacing diverges at
+  low incidence and must be off (Sect. 10.2).
 - The boundary layer is in the section table, not in the lattice. Weber-number effects at model
   scale are not represented.
 - The cavity length is sectional; the lattice adds the three-dimensional coupling of the loads
