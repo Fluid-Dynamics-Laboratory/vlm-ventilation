@@ -1,0 +1,22 @@
+source,figure,quantity,regime,path,alpha_deg,Fn_h,AR_h,chord_m,section,value,uncertainty,notes
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.999,0.05,z_over_h=0.295; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.788,0.05,z_over_h=0.319; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.616,0.05,z_over_h=0.338; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.480,0.05,z_over_h=0.349; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.343,0.05,z_over_h=0.362; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.212,0.05,z_over_h=0.376; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,1.094,0.05,z_over_h=0.400; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.998,0.05,z_over_h=0.426; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.923,0.05,z_over_h=0.456; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.805,0.05,z_over_h=0.509; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.701,0.05,z_over_h=0.571; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.610,0.05,z_over_h=0.630; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.527,0.05,z_over_h=0.691; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.455,0.05,z_over_h=0.745; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.388,0.05,z_over_h=0.788; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.332,0.05,z_over_h=0.823; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.257,0.05,z_over_h=0.871; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.185,0.05,z_over_h=0.908; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.129,0.05,z_over_h=0.932; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.057,0.05,z_over_h=0.964; curve clipped at L/c = 2
+Harwood Young Ceccio 2016 JFM 800,"digitised by L. Orain (2026), wake_rel, photograph",L_over_c,FV,steady,10.0,1.50,1.00,0.2794,modified NACA 0009,0.011,0.05,z_over_h=0.983; curve clipped at L/c = 2

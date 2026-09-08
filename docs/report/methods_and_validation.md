@@ -178,7 +178,8 @@ panel dimension (Sect. 4.6).
 | `python docs/inception/validate.py` | inception against published values | 25 min |
 | `python docs/cavity/validate.py` | ventilated loads, closure angle and hysteresis on the strut of Harwood et al. | 20 min |
 | `python docs/report/example_end_to_end.py` | the complete run of Sect. 9 | 5 min |
-| `python docs/validation/compare_template.py` | compares digitised data in `docs/validation/data/` with the code | as needed |
+| `python docs/validation/import_digitised.py` | converts the raw digitised curves of `docs/validation/data/raw/` into the template format | 1 s |
+| `python docs/validation/validate.py` | compares the code with every digitised curve in `docs/validation/data/` (Sect. 10.5) | 25 min |
 
 Each script prints its results and writes a JSON file next to itself. The first run of any
 script takes an extra minute while Numba compiles the kernel.
@@ -194,7 +195,7 @@ tests/                                          unit checks
 docs/tip_loading/                               convergence study and its report (Sect. 4.7)
 docs/inception/, docs/cavity/                   per-model documentation and validation scripts
 docs/report/                                    this document, its figures, the complete run
-docs/validation/                                digitised data and the comparison script (Sect. 10)
+docs/validation/                                digitised data, the importer and the comparison script (Sect. 10)
 vlm_unsteady_wake.ipynb                         the working notebook
 ```
 
@@ -732,6 +733,8 @@ Bartlett, G. F. and Vidal, R. J. (1955). Experimental investigation of influence
 the aerodynamic characteristics of low aspect ratio wings at low speeds. *Journal of the
 Aeronautical Sciences* 22, 517–533.
 
+Bertin, J. J. and Smith, M. L. (1998). *Aerodynamics for Engineers*, 3rd edition. Prentice Hall.
+
 Damley-Strnad, A., Harwood, C. M. and Young, Y. L. (2019). Hydrodynamic performance and
 hysteresis response of hydrofoils in ventilated flows. *Sixth International Symposium on Marine
 Propulsors*, Rome.
@@ -746,10 +749,16 @@ Fluid Mechanics* 800, 5–56.
 Hess, J. L. and Smith, A. M. O. (1962). Calculation of non-lifting potential flow about arbitrary
 three-dimensional bodies. Report E.S. 40622, Douglas Aircraft.
 
+Lamar, J. E. (1974). Extension of leading-edge-suction analogy to wings with separated flow around
+the side edges at subsonic speeds. Technical Report TR R-428, NASA.
+
 Katz, J. and Plotkin, A. (2001). *Low-Speed Aerodynamics*, 2nd edition. Cambridge University Press.
 
 Kiceniuk, T. (1954). A preliminary experimental study of vertical hydrofoils of low aspect ratio
 piercing a water surface. Report E-55.2, California Institute of Technology.
+
+Melin, T. (2000). A vortex lattice MATLAB implementation for linear aerodynamic wing applications.
+MSc thesis, Royal Institute of Technology (KTH), Stockholm.
 
 Orain, L. (2026). Coupling a vortex lattice method with a ventilation model. Internship report,
 ISAE-Supaero and University of Bologna.
@@ -772,6 +781,9 @@ https://github.com/ignaziomviola/bem-fem-fsi.
 Wadlin, K. L., Ramsen, J. A. and Vaughan, V. L. (1955). The hydrodynamic characteristics of
 modified rectangular flat plates having aspect ratios of 1.00, 0.25 and 0.125 and operating near
 a free water surface. Report 1246, NACA.
+
+Weber, J. and Brebner, G. G. (1958). Low-speed tests on 45-deg swept-back wings, Part I: pressure
+measurements on wings of aspect ratio 5. Reports and Memoranda 2882, Aeronautical Research Council.
 
 Young, Y. L., Harwood, C. M., Miguel Montero, F., Ward, J. C. and Ceccio, S. L. (2017).
 Ventilation of lifting bodies: review of the physics and discussion of scaling effects. *Applied

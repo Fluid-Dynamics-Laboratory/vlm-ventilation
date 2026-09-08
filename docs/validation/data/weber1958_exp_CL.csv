@@ -1,0 +1,6 @@
+source,figure,quantity,regime,path,alpha_deg,Fn_h,AR_h,chord_m,section,value,uncertainty,notes
+"Weber Brebner 1958 ARC R&M 2882, experiment","digitised by L. Orain (2026), wake_rel",CL,FW,steady,2.05,,5.00,,"rectangular wing, 45 deg sweep",0.1243,0.01,no free surface; sweep_deg=45; AR_h is the wing aspect ratio
+"Weber Brebner 1958 ARC R&M 2882, experiment","digitised by L. Orain (2026), wake_rel",CL,FW,steady,4.18,,5.00,,"rectangular wing, 45 deg sweep",0.2400,0.01,no free surface; sweep_deg=45; AR_h is the wing aspect ratio
+"Weber Brebner 1958 ARC R&M 2882, experiment","digitised by L. Orain (2026), wake_rel",CL,FW,steady,6.31,,5.00,,"rectangular wing, 45 deg sweep",0.3524,0.01,no free surface; sweep_deg=45; AR_h is the wing aspect ratio
+"Weber Brebner 1958 ARC R&M 2882, experiment","digitised by L. Orain (2026), wake_rel",CL,FW,steady,8.44,,5.00,,"rectangular wing, 45 deg sweep",0.4584,0.01,no free surface; sweep_deg=45; AR_h is the wing aspect ratio
+"Weber Brebner 1958 ARC R&M 2882, experiment","digitised by L. Orain (2026), wake_rel",CL,FW,steady,10.50,,5.00,,"rectangular wing, 45 deg sweep",0.5600,0.01,no free surface; sweep_deg=45; AR_h is the wing aspect ratio
