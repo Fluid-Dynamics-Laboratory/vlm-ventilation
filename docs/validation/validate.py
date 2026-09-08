@@ -80,11 +80,11 @@ def compare(a_code, cl_code, a_data, cl_data):
 
 
 # ------------------------------------------------------------------ runs
-def run_wing(AR, alpha_deg, sweep_deg=0.0, N=15, M=5, T_chords=None, dt_chords=0.05, ratio=0.05):
-    """Rectangular (optionally swept) wing, span 1, no free surface, both tips shedding. -> CL"""
+def run_wing(AR, alpha_deg, sweep_deg=0.0, N=15, M=5, T_chords=None, dt_chords=0.05, ratio=0.05, shed="both"):
+    """Rectangular (optionally swept) wing, span 1, no free surface, tip shedding as given. -> CL"""
     c = 1.0/AR
     T = (T_chords if T_chords is not None else max(3.0, 2.0*AR))*c          # at least three chords and two spans of travel
-    s = VLMSurface(np.zeros(3), 1, False, "both", 1.0, np.ones(N + 1)*c, np.deg2rad(alpha_deg), 0, np.deg2rad(sweep_deg), 0, 0, True, True, N, M)
+    s = VLMSurface(np.zeros(3), 1, False, shed, 1.0, np.ones(N + 1)*c, np.deg2rad(alpha_deg), 0, np.deg2rad(sweep_deg), 0, 0, True, True, N, M)
     s._build_wing()
     v = VLMSolver([s], np.array([1.0, 0, 0]), False, ratio, 0.4)
     v._time_sim(T, dt_chords*c, "classic"); v._kuttas_loads()
@@ -132,12 +132,17 @@ def case_A(out):
     rod = read("rodriguez1990_VLM_CL.csv"); lam = read("lamar1974_exp_CL.csv")
     tor = read("bertin1998_tornado_VLM_CL.csv"); web = read("weber1958_exp_CL.csv")
     res = {}
-    for key, AR, sweep, alphas in (("rect_AR1", 1.0, 0.0, np.arange(2.0, 16.1, 2.0)), ("rect_AR3", 3.0, 0.0, np.arange(2.0, 12.1, 2.0)),
-                                   ("swept45_AR5", 5.0, 45.0, np.arange(2.0, 10.1, 2.0))):
-        t = time.time(); cl = np.array([run_wing(AR, a, sweep) for a in alphas])
+    # the rectangular wings shed from the tips (side-edge separation of a low aspect ratio wing); the swept wing of aspect
+    # ratio 5 does not: with tip shedding and cosine spacing its solution diverges at alpha <= 4 deg (recorded below)
+    for key, AR, sweep, shed, alphas in (("rect_AR1", 1.0, 0.0, "both", np.arange(2.0, 16.1, 2.0)), ("rect_AR3", 3.0, 0.0, "both", np.arange(2.0, 12.1, 2.0)),
+                                         ("swept45_AR5", 5.0, 45.0, "none", np.arange(2.0, 10.1, 2.0))):
+        t = time.time(); cl = np.array([run_wing(AR, a, sweep, shed=shed) for a in alphas])
         # travel check at 8 deg: twice the default travel
-        cl_long = run_wing(AR, 8.0, sweep, T_chords=2*max(3.0, 2.0*AR))
-        r = dict(AR=AR, sweep_deg=sweep, alpha=alphas.tolist(), CL=cl.tolist(), CL_8deg_double_travel=cl_long, CL_8deg=float(cl[list(alphas).index(8.0)]))
+        cl_long = run_wing(AR, 8.0, sweep, T_chords=2*max(3.0, 2.0*AR), shed=shed)
+        r = dict(AR=AR, sweep_deg=sweep, shedding=shed, alpha=alphas.tolist(), CL=cl.tolist(), CL_8deg_double_travel=cl_long, CL_8deg=float(cl[list(alphas).index(8.0)]))
+        if sweep != 0:
+            r["CL_tip_shedding"] = [run_wing(AR, a, sweep, shed="both") for a in alphas]
+            print(f"  {key} with tip shedding: CL = {np.round(r['CL_tip_shedding'], 3).tolist()}")
         if sweep == 0:
             for name, rows in (("rodriguez", rod), ("lamar", lam)):
                 a, y = curve(rows, AR_h=AR); r[name] = dict(alpha=a.tolist(), CL=y.tolist(), cmp=compare(alphas, cl, a, y))
@@ -229,6 +234,9 @@ def figures(out):
     for ax, key, ttl in zip(axs, ("rect_AR1", "rect_AR3", "swept45_AR5"), ("rectangular, $AR$ = 1", "rectangular, $AR$ = 3", "45° swept, $AR$ = 5")):
         r = A[key]
         ax.plot(r["alpha"], r["CL"], "-o", color=BLK, ms=4, lw=1.4, label="this code")
+        if "CL_tip_shedding" in r:
+            ts = np.array(r["CL_tip_shedding"]); ok = np.abs(ts) < 2
+            ax.plot(np.array(r["alpha"])[ok], ts[ok], "x", color=GRY, ms=5, label="code with tip shedding (diverges below 6°)")
         for name, lab, col, mk in (("rodriguez", "Rodriguez (1990) VLM", BLU, "s"), ("lamar", "experiment (Lamar, 1974)", ORG, "^"),
                                    ("tornado", "Bertin & Smith / Tornado VLM", BLU, "s"), ("weber", "Weber & Brebner (1958)", ORG, "^")):
             if name in r:
@@ -261,7 +269,7 @@ def figures(out):
             col = FNCOL.get(f"{r['Fn_h']:.1f}", GRY)
             ax.plot(r["data"]["alpha"], r["data"]["CL"], "o", color=col, ms=4, mfc="none")
             ax.plot(r["alpha"], r["CL"], "-", color=col, lw=1.4, label=fr"$Fn_h$ = {r['Fn_h']:.1f}")
-        ax.set_title(fr"$AR_h$ = {ar}, fully ventilated", fontsize=9); ax.set_xlabel(r"$\alpha$ [deg]"); ax.set_xlim(0, 32); ax.set_ylim(0, 0.9); ax.legend(loc="upper left", fontsize=7)
+        ax.set_title(fr"$AR_h$ = {ar}, fully ventilated", fontsize=9); ax.set_xlabel(r"$\alpha$ [deg]"); ax.set_xlim(0, 32); ax.set_ylim(0, 1.1); ax.legend(loc="upper left", fontsize=7)
     axs[0].set_ylabel(r"$C_L$", rotation=0, labelpad=12)
     axs[2].text(31, 0.05, "lines: this code\ncircles: Harwood et al. (2016)", ha="right", fontsize=7)
     fig.tight_layout(); fig.savefig(os.path.join(HERE, "fig3_strut_FV.png")); plt.close(fig)
@@ -273,7 +281,7 @@ def figures(out):
     ax.plot(D["llm"]["L_over_c"]["value"], D["llm"]["L_over_c"]["z_over_h"], "--", color=GRY, lw=1.2, label="lifting line, Harwood et al.")
     ax.plot(np.minimum(D["N12"]["L"], 2.5), D["N12"]["z_over_h"], "-s", color=BLK, ms=4, lw=1.4, label="this code, 12 sections")
     ax.plot(np.minimum(D["N24"]["L"], 2.5), D["N24"]["z_over_h"], "-", color=BLU, lw=1.0, label="this code, 24 sections")
-    ax.set_xlim(0, 2.5); ax.set_ylim(1, 0); ax.set_xlabel(r"$L/c$"); ax.set_ylabel(r"$z/h$", rotation=0, labelpad=10); ax.legend(loc="lower right", fontsize=6.5); ax.set_title("cavity length", fontsize=9)
+    ax.set_xlim(0, 2.5); ax.set_ylim(1, 0); ax.set_xlabel(r"$L/c$ (code values above 2.5 clipped)"); ax.set_ylabel(r"$z/h$", rotation=0, labelpad=10); ax.legend(loc="lower right", fontsize=6.5); ax.set_title("cavity length", fontsize=9)
     ax = axs[1]
     ax.plot(D["llm"]["Cl_section"]["value"], D["llm"]["Cl_section"]["z_over_h"], "--", color=GRY, lw=1.2, label="lifting line, ventilated")
     ax.plot(D["N12"]["Cl_vent"], D["N12"]["z_over_h"], "-s", color=BLK, ms=4, lw=1.4, label="this code, ventilated")
@@ -284,7 +292,7 @@ def figures(out):
     ax.plot(D["N12"]["alpha_eff_over_alpha"], D["N12"]["z_over_h"], "-s", color=BLK, ms=4, lw=1.4, label=r"this code, $\alpha_\mathrm{eff}/\alpha$")
     ax.plot(D["llm"]["a0_over_2pi"]["value"], D["llm"]["a0_over_2pi"]["z_over_h"], "--", color=ORG, lw=1.2, label=r"lifting line, $a_0/2\pi$")
     ax.plot(D["N12"]["a0_over_2pi"], D["N12"]["z_over_h"], "-^", color=ORG, ms=4, lw=1.4, label=r"this code, $a_0/2\pi$")
-    ax.set_xlim(0, 1.4); ax.set_ylim(1, 0); ax.legend(loc="lower right", fontsize=6.5); ax.set_title("effective incidence and lift slope", fontsize=9)
+    ax.set_xlim(0, 1.4); ax.set_ylim(1, 0); ax.legend(loc="upper right", fontsize=6.5); ax.set_title("effective incidence and lift slope", fontsize=9)
     fig.tight_layout(); fig.savefig(os.path.join(HERE, "fig4_profile.png")); plt.close(fig)
     print("figures written")
 
